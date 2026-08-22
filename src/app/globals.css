@@ -1,26 +1,201 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@custom-variant dark (&:is(.dark *));
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-brand-sage: var(--brand-sage);
+  --color-brand-sage-deep: var(--brand-sage-deep);
+  --color-brand-terracotta: var(--brand-terracotta);
+  --color-brand-cream-deep: var(--brand-cream-deep);
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-heading: var(--font-fraunces), Georgia, serif;
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+:root {
+  --background: oklch(0.975 0.013 85);
+  --foreground: oklch(0.26 0.025 145);
+  --card: oklch(0.99 0.008 85);
+  --card-foreground: oklch(0.26 0.025 145);
+  --popover: oklch(0.99 0.008 85);
+  --popover-foreground: oklch(0.26 0.025 145);
+  --primary: oklch(0.46 0.065 152);
+  --primary-foreground: oklch(0.98 0.01 85);
+  --secondary: oklch(0.935 0.022 95);
+  --secondary-foreground: oklch(0.32 0.035 148);
+  --muted: oklch(0.945 0.016 88);
+  --muted-foreground: oklch(0.51 0.028 135);
+  --accent: oklch(0.915 0.045 55);
+  --accent-foreground: oklch(0.38 0.11 40);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.885 0.02 85);
+  --input: oklch(0.885 0.02 85);
+  --ring: oklch(0.61 0.075 150);
+  --chart-1: oklch(0.6 0.08 150);
+  --chart-2: oklch(0.68 0.13 45);
+  --chart-3: oklch(0.75 0.11 85);
+  --chart-4: oklch(0.58 0.06 220);
+  --chart-5: oklch(0.5 0.04 30);
+  --radius: 1rem;
+  --sidebar: oklch(0.97 0.012 85);
+  --sidebar-foreground: oklch(0.26 0.025 145);
+  --sidebar-primary: oklch(0.46 0.065 152);
+  --sidebar-primary-foreground: oklch(0.98 0.01 85);
+  --sidebar-accent: oklch(0.915 0.045 55);
+  --sidebar-accent-foreground: oklch(0.38 0.11 40);
+  --sidebar-border: oklch(0.885 0.02 85);
+  --sidebar-ring: oklch(0.61 0.075 150);
+  --brand-sage: oklch(0.72 0.07 150);
+  --brand-sage-deep: oklch(0.46 0.065 152);
+  --brand-terracotta: oklch(0.7 0.135 45);
+  --brand-cream-deep: oklch(0.93 0.02 85);
+}
+
+.dark {
+  --background: oklch(0.22 0.02 145);
+  --foreground: oklch(0.96 0.012 85);
+  --card: oklch(0.27 0.022 145);
+  --card-foreground: oklch(0.96 0.012 85);
+  --popover: oklch(0.27 0.022 145);
+  --popover-foreground: oklch(0.96 0.012 85);
+  --primary: oklch(0.72 0.08 150);
+  --primary-foreground: oklch(0.2 0.025 150);
+  --secondary: oklch(0.32 0.025 145);
+  --secondary-foreground: oklch(0.96 0.012 85);
+  --muted: oklch(0.32 0.025 145);
+  --muted-foreground: oklch(0.72 0.02 100);
+  --accent: oklch(0.36 0.05 50);
+  --accent-foreground: oklch(0.92 0.04 60);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.66 0.07 150);
+  --chart-1: oklch(0.72 0.08 150);
+  --chart-2: oklch(0.76 0.11 45);
+  --chart-3: oklch(0.82 0.09 85);
+  --chart-4: oklch(0.7 0.06 220);
+  --chart-5: oklch(0.68 0.05 30);
+  --sidebar: oklch(0.27 0.022 145);
+  --sidebar-foreground: oklch(0.96 0.012 85);
+  --sidebar-primary: oklch(0.72 0.08 150);
+  --sidebar-primary-foreground: oklch(0.2 0.025 150);
+  --sidebar-accent: oklch(0.36 0.05 50);
+  --sidebar-accent-foreground: oklch(0.92 0.04 60);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.66 0.07 150);
+  --brand-sage: oklch(0.66 0.07 150);
+  --brand-sage-deep: oklch(0.42 0.05 152);
+  --brand-terracotta: oklch(0.72 0.11 45);
+  --brand-cream-deep: oklch(0.34 0.022 100);
+}
+
+@keyframes marketing-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  50% {
+    transform: translate3d(0.75rem, -1rem, 0) rotate(3deg);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@keyframes marketing-rise {
+  from {
+    opacity: 0;
+    transform: translateY(1.25rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.marketing-drift {
+  animation: marketing-drift 10s ease-in-out infinite;
+}
+
+.marketing-drift-slow {
+  animation: marketing-drift 14s ease-in-out infinite reverse;
+}
+
+.marketing-rise {
+  animation: marketing-rise 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.marketing-rise-delay {
+  animation-delay: 120ms;
+}
+
+.marketing-rise-delay-2 {
+  animation-delay: 240ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marketing-drift,
+  .marketing-drift-slow,
+  .marketing-rise,
+  .marketing-rise-delay,
+  .marketing-rise-delay-2 {
+    animation: none;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    @apply font-sans;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  ::selection {
+    background: var(--accent);
+    color: var(--accent-foreground);
+  }
 }
