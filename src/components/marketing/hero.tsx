@@ -21,11 +21,11 @@ export function Hero() {
     <section className="relative isolate overflow-hidden bg-[radial-gradient(circle_at_50%_0%,var(--brand-cream-deep),transparent_52%),linear-gradient(135deg,var(--background),var(--secondary)_70%,var(--background))]">
       <GradientBlob
         className="marketing-drift -top-32 left-[3%] w-80 opacity-70 sm:w-112"
-        tone="sage"
+        tone="navy"
       />
       <GradientBlob
         className="marketing-drift-slow -right-28 top-16 w-72 opacity-70 sm:w-104"
-        tone="terracotta"
+        tone="gold"
       />
 
       <div className="relative mx-auto grid min-h-[calc(100svh-4.5rem)] w-full max-w-6xl items-center gap-14 px-4 py-18 sm:px-6 lg:grid-cols-[1fr_0.92fr] lg:py-24">
@@ -71,7 +71,7 @@ export function Hero() {
 
           <div className="absolute left-1/2 top-1/2 h-56 w-56 -translate-x-1/2 -translate-y-1/2 rounded-full border border-dashed border-primary/35" />
           <Sprout className="marketing-drift absolute left-[15%] top-[33%] size-9 rotate-[-18deg] text-primary" strokeWidth={1.25} />
-          <Leaf className="marketing-drift-slow absolute bottom-[20%] right-[14%] size-10 rotate-[35deg] text-brand-terracotta" strokeWidth={1.25} />
+          <Leaf className="marketing-drift-slow absolute bottom-[20%] right-[14%] size-10 rotate-[35deg] text-brand-gold" strokeWidth={1.25} />
 
           {topicFragments.map(({ text, className }) => (
             <div

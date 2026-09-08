@@ -42,7 +42,7 @@ export function FeatureGrid() {
           Start with the kind of support you need today.
         </h2>
         <p className="max-w-xl text-base leading-7 text-muted-foreground">
-          Some days you need to be heard. Some days you need a plan. mindfit is
+          Some days you need to be heard. Some days you need a plan. Psychéon is
           designed for both.
         </p>
       </div>

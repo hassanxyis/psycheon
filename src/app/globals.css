@@ -36,9 +36,8 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
-  --color-brand-sage: var(--brand-sage);
-  --color-brand-sage-deep: var(--brand-sage-deep);
-  --color-brand-terracotta: var(--brand-terracotta);
+  --color-brand-navy: var(--brand-navy);
+  --color-brand-gold: var(--brand-gold);
   --color-brand-cream-deep: var(--brand-cream-deep);
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
@@ -52,81 +51,86 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* Palette is taken from the logo: navy #26303F and gold #A89578. Gold is a
+   light tone, so it stays an accent -- dark text on it only reaches 4.06:1,
+   which is why --accent-foreground is pushed well past the gold's own
+   lightness rather than sitting a step below it. */
 :root {
-  --background: oklch(0.975 0.013 85);
-  --foreground: oklch(0.26 0.025 145);
-  --card: oklch(0.99 0.008 85);
-  --card-foreground: oklch(0.26 0.025 145);
-  --popover: oklch(0.99 0.008 85);
-  --popover-foreground: oklch(0.26 0.025 145);
-  --primary: oklch(0.46 0.065 152);
-  --primary-foreground: oklch(0.98 0.01 85);
-  --secondary: oklch(0.935 0.022 95);
-  --secondary-foreground: oklch(0.32 0.035 148);
-  --muted: oklch(0.945 0.016 88);
-  --muted-foreground: oklch(0.51 0.028 135);
-  --accent: oklch(0.915 0.045 55);
-  --accent-foreground: oklch(0.38 0.11 40);
+  --background: oklch(0.975 0.01 80);
+  --foreground: oklch(0.27 0.028 258);
+  --card: oklch(0.99 0.006 80);
+  --card-foreground: oklch(0.27 0.028 258);
+  --popover: oklch(0.99 0.006 80);
+  --popover-foreground: oklch(0.27 0.028 258);
+  --primary: oklch(0.31 0.032 258);
+  --primary-foreground: oklch(0.98 0.008 85);
+  --secondary: oklch(0.935 0.016 88);
+  --secondary-foreground: oklch(0.33 0.03 258);
+  --muted: oklch(0.945 0.012 84);
+  --muted-foreground: oklch(0.48 0.03 258);
+  --accent: oklch(0.905 0.032 82);
+  --accent-foreground: oklch(0.28 0.045 80);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.885 0.02 85);
-  --input: oklch(0.885 0.02 85);
-  --ring: oklch(0.61 0.075 150);
-  --chart-1: oklch(0.6 0.08 150);
-  --chart-2: oklch(0.68 0.13 45);
-  --chart-3: oklch(0.75 0.11 85);
-  --chart-4: oklch(0.58 0.06 220);
-  --chart-5: oklch(0.5 0.04 30);
+  --border: oklch(0.885 0.014 84);
+  --input: oklch(0.885 0.014 84);
+  --ring: oklch(0.45 0.035 258);
+  --chart-1: oklch(0.38 0.035 258);
+  --chart-2: oklch(0.679 0.047 78);
+  --chart-3: oklch(0.55 0.04 258);
+  --chart-4: oklch(0.76 0.047 84);
+  --chart-5: oklch(0.62 0.03 230);
   --radius: 1rem;
-  --sidebar: oklch(0.97 0.012 85);
-  --sidebar-foreground: oklch(0.26 0.025 145);
-  --sidebar-primary: oklch(0.46 0.065 152);
-  --sidebar-primary-foreground: oklch(0.98 0.01 85);
-  --sidebar-accent: oklch(0.915 0.045 55);
-  --sidebar-accent-foreground: oklch(0.38 0.11 40);
-  --sidebar-border: oklch(0.885 0.02 85);
-  --sidebar-ring: oklch(0.61 0.075 150);
-  --brand-sage: oklch(0.72 0.07 150);
-  --brand-sage-deep: oklch(0.46 0.065 152);
-  --brand-terracotta: oklch(0.7 0.135 45);
-  --brand-cream-deep: oklch(0.93 0.02 85);
+  --sidebar: oklch(0.97 0.009 80);
+  --sidebar-foreground: oklch(0.27 0.028 258);
+  --sidebar-primary: oklch(0.31 0.032 258);
+  --sidebar-primary-foreground: oklch(0.98 0.008 85);
+  --sidebar-accent: oklch(0.905 0.032 82);
+  --sidebar-accent-foreground: oklch(0.28 0.045 80);
+  --sidebar-border: oklch(0.885 0.014 84);
+  --sidebar-ring: oklch(0.45 0.035 258);
+  --brand-navy: oklch(0.31 0.032 258);
+  --brand-gold: oklch(0.679 0.047 78);
+  --brand-cream-deep: oklch(0.93 0.016 84);
 }
 
+/* Dark mode inverts which brand colour leads: the surface is already navy, so
+   navy cannot also be --primary. Gold takes the primary role here (8.00:1 on
+   the dark background) and navy becomes the surface family. */
 .dark {
-  --background: oklch(0.22 0.02 145);
-  --foreground: oklch(0.96 0.012 85);
-  --card: oklch(0.27 0.022 145);
-  --card-foreground: oklch(0.96 0.012 85);
-  --popover: oklch(0.27 0.022 145);
-  --popover-foreground: oklch(0.96 0.012 85);
-  --primary: oklch(0.72 0.08 150);
-  --primary-foreground: oklch(0.2 0.025 150);
-  --secondary: oklch(0.32 0.025 145);
-  --secondary-foreground: oklch(0.96 0.012 85);
-  --muted: oklch(0.32 0.025 145);
-  --muted-foreground: oklch(0.72 0.02 100);
-  --accent: oklch(0.36 0.05 50);
-  --accent-foreground: oklch(0.92 0.04 60);
+  --background: oklch(0.22 0.022 258);
+  --foreground: oklch(0.96 0.01 85);
+  --card: oklch(0.27 0.024 258);
+  --card-foreground: oklch(0.96 0.01 85);
+  --popover: oklch(0.27 0.024 258);
+  --popover-foreground: oklch(0.96 0.01 85);
+  --primary: oklch(0.76 0.047 84);
+  --primary-foreground: oklch(0.24 0.03 258);
+  --secondary: oklch(0.32 0.026 258);
+  --secondary-foreground: oklch(0.96 0.01 85);
+  --muted: oklch(0.32 0.026 258);
+  --muted-foreground: oklch(0.74 0.022 90);
+  --accent: oklch(0.38 0.038 80);
+  --accent-foreground: oklch(0.93 0.035 82);
   --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.66 0.07 150);
-  --chart-1: oklch(0.72 0.08 150);
-  --chart-2: oklch(0.76 0.11 45);
-  --chart-3: oklch(0.82 0.09 85);
-  --chart-4: oklch(0.7 0.06 220);
-  --chart-5: oklch(0.68 0.05 30);
-  --sidebar: oklch(0.27 0.022 145);
-  --sidebar-foreground: oklch(0.96 0.012 85);
-  --sidebar-primary: oklch(0.72 0.08 150);
-  --sidebar-primary-foreground: oklch(0.2 0.025 150);
-  --sidebar-accent: oklch(0.36 0.05 50);
-  --sidebar-accent-foreground: oklch(0.92 0.04 60);
+  --ring: oklch(0.7 0.045 82);
+  --chart-1: oklch(0.76 0.047 84);
+  --chart-2: oklch(0.68 0.045 78);
+  --chart-3: oklch(0.72 0.035 230);
+  --chart-4: oklch(0.6 0.04 258);
+  --chart-5: oklch(0.82 0.04 88);
+  --sidebar: oklch(0.27 0.024 258);
+  --sidebar-foreground: oklch(0.96 0.01 85);
+  --sidebar-primary: oklch(0.76 0.047 84);
+  --sidebar-primary-foreground: oklch(0.24 0.03 258);
+  --sidebar-accent: oklch(0.38 0.038 80);
+  --sidebar-accent-foreground: oklch(0.93 0.035 82);
   --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.66 0.07 150);
-  --brand-sage: oklch(0.66 0.07 150);
-  --brand-sage-deep: oklch(0.42 0.05 152);
-  --brand-terracotta: oklch(0.72 0.11 45);
-  --brand-cream-deep: oklch(0.34 0.022 100);
+  --sidebar-ring: oklch(0.7 0.045 82);
+  --brand-navy: oklch(0.42 0.038 258);
+  --brand-gold: oklch(0.72 0.047 82);
+  --brand-cream-deep: oklch(0.32 0.026 260);
 }
 
 @keyframes marketing-drift {

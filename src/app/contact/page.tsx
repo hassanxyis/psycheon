@@ -6,9 +6,9 @@ import { buttonVariants } from "@/components/ui/button";
 import { CLINIC } from "@/lib/site";
 
 export const metadata = {
-  title: "Contact · mindfit",
+  title: "Contact · Psychéon",
   description:
-    "Visit, call or email the mindfit clinic to arrange a consultation with one of our psychologists.",
+    "Visit, call or email the Psychéon clinic to arrange a consultation with one of our psychologists.",
 };
 
 /**

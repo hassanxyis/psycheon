@@ -9,7 +9,7 @@ export function CtaBand() {
     <section className="px-4 py-20 sm:px-6 lg:py-28">
       <div className="relative mx-auto isolate max-w-6xl overflow-hidden rounded-[2rem] bg-primary px-6 py-16 text-center text-primary-foreground shadow-xl shadow-primary/10 sm:px-12 sm:py-20">
         <GradientBlob className="-top-32 -left-20 w-72 opacity-55" tone="cream" />
-        <GradientBlob className="-right-16 -bottom-24 w-80 opacity-50" tone="terracotta" />
+        <GradientBlob className="-right-16 -bottom-24 w-80 opacity-50" tone="gold" />
         <div className="relative mx-auto max-w-2xl space-y-6">
           <p className="text-sm font-semibold tracking-[0.16em] text-primary-foreground/75 uppercase">
             Take the gentler next step

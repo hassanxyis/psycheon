@@ -26,7 +26,7 @@ export default async function LoginPage(props: PageProps<"/login">) {
       title="Pick up the conversation when you are ready."
       description="Your thoughts, your pace. Sign in to return to your community and the support that is waiting for you."
       backHref="/"
-      backLabel="Back to mindfit"
+      backLabel="Back to Psychéon"
     >
       <div className="space-y-6">
         <div className="space-y-1.5">

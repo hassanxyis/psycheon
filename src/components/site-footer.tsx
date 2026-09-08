@@ -1,5 +1,7 @@
 import Link from "next/link";
-import { Leaf, MapPin } from "lucide-react";
+import { MapPin } from "lucide-react";
+
+import { Logo } from "@/components/logo";
 
 export function SiteFooter() {
   return (
@@ -7,10 +9,8 @@ export function SiteFooter() {
       <div className="mx-auto grid w-full max-w-6xl gap-8 px-4 py-10 sm:px-6 md:grid-cols-[1fr_auto] md:items-end">
         <div className="max-w-sm space-y-3">
           <Link href="/" className="inline-flex items-center gap-2.5">
-            <span className="grid size-8 place-items-center rounded-full bg-primary text-primary-foreground">
-              <Leaf className="size-4" aria-hidden />
-            </span>
-            <span className="font-heading text-xl tracking-tight">mindfit</span>
+            <Logo className="h-9 w-auto" />
+            <span className="font-heading text-xl tracking-tight">Psychéon</span>
           </Link>
           <p className="text-sm leading-6 text-muted-foreground">
             A softer place for honest conversations and in-person care when you
@@ -41,7 +41,8 @@ export function SiteFooter() {
             </Link>
           </nav>
           <p className="text-xs text-muted-foreground">
-            © {new Date().getFullYear()} mindfit. Made for calmer conversations.
+            © {new Date().getFullYear()} Psychéon. Made for calmer
+            conversations.
           </p>
         </div>
       </div>

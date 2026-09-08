@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { Leaf, LogOut, Menu, Shield, UserRound } from "lucide-react";
+import { LogOut, Menu, Shield, UserRound } from "lucide-react";
 
 import { signOut } from "@/app/(auth)/actions";
+import { Logo } from "@/components/logo";
 import { ProfileAvatar } from "@/components/profile/profile-avatar";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
@@ -32,11 +33,9 @@ export async function SiteHeader() {
           href="/"
           className="group flex items-center gap-2.5 rounded-lg outline-none transition-opacity hover:opacity-80 focus-visible:ring-3 focus-visible:ring-ring/50"
         >
-          <span className="grid size-8 place-items-center rounded-full bg-primary text-primary-foreground shadow-sm shadow-primary/20">
-            <Leaf className="size-4" aria-hidden />
-          </span>
+          <Logo className="h-9 w-auto" />
           <span className="font-heading text-xl leading-none tracking-tight">
-            mindfit
+            Psychéon
           </span>
         </Link>
 

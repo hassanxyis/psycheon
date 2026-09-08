@@ -3,14 +3,16 @@ import { cn } from "@/lib/utils";
 /** Decorative atmosphere only — intentionally invisible to assistive tech. */
 export function GradientBlob({
   className,
-  tone = "sage",
+  tone = "navy",
 }: {
   className?: string;
-  tone?: "sage" | "terracotta" | "cream";
+  tone?: "navy" | "gold" | "cream";
 }) {
   const tones = {
-    sage: "bg-brand-sage/35",
-    terracotta: "bg-brand-terracotta/25",
+    // Navy is far darker than the sage it replaced, so it blurs in much
+    // heavier at the same opacity -- hence the lower alpha.
+    navy: "bg-brand-navy/18",
+    gold: "bg-brand-gold/28",
     cream: "bg-brand-cream-deep/65",
   };
 

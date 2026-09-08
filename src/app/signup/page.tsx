@@ -21,7 +21,7 @@ export default async function SignupPage(props: PageProps<"/signup">) {
       title="A softer place can start with one honest sentence."
       description="Create your free account to read, share, and take the next step only when it feels right for you."
       backHref="/"
-      backLabel="Back to mindfit"
+      backLabel="Back to Psychéon"
     >
       <div className="space-y-6">
         <div className="space-y-1.5">

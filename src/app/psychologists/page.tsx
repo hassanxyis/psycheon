@@ -8,9 +8,9 @@ import { buttonVariants } from "@/components/ui/button";
 import { getPsychologists } from "@/lib/queries";
 
 export const metadata = {
-  title: "Psychologists · mindfit",
+  title: "Psychologists · Psychéon",
   description:
-    "Meet the qualified psychologists at the mindfit clinic and find support that fits what you are navigating.",
+    "Meet the qualified psychologists at the Psychéon clinic and find support that fits what you are navigating.",
 };
 
 function excerpt(text: string, max = 180) {
@@ -33,7 +33,7 @@ export default async function PsychologistsPage() {
             People with the right training, ready when you are.
           </h1>
           <p className="text-base leading-7 text-muted-foreground">
-            Every psychologist here practises at the mindfit clinic. Read what
+            Every psychologist here practises at the Psychéon clinic. Read what
             they work with, then choose the person who fits what you are
             carrying.
           </p>

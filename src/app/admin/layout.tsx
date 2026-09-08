@@ -2,7 +2,7 @@ import { AdminNav } from "@/components/admin/admin-nav";
 import { requireAdmin } from "@/lib/admin";
 
 export const metadata = {
-  title: "Admin · mindfit",
+  title: "Admin · Psychéon",
   robots: { index: false, follow: false },
 };
 

@@ -33,7 +33,7 @@ export function CredibilitySection() {
             Support can be serious without feeling severe.
           </h2>
           <p className="text-base leading-7 text-muted-foreground">
-            Mindfit brings the warmth of a good conversation closer to the
+            Psychéon brings the warmth of a good conversation closer to the
             reassurance of professional, in-person care.
           </p>
         </div>

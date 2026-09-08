@@ -21,7 +21,7 @@ const values = [
 
 export function ValueStrip() {
   return (
-    <section aria-label="What mindfit offers" className="border-y border-border/60 bg-secondary/65">
+    <section aria-label="What Psychéon offers" className="border-y border-border/60 bg-secondary/65">
       <div className="mx-auto grid w-full max-w-6xl gap-x-8 gap-y-5 px-4 py-7 sm:grid-cols-2 sm:px-6 lg:grid-cols-4">
         {values.map(({ icon: Icon, label }) => (
           <div key={label} className="flex items-center gap-3">

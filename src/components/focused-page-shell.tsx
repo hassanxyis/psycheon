@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { ArrowLeft, Leaf, Sprout } from "lucide-react";
+import { ArrowLeft, Sprout } from "lucide-react";
 
+import { Logo } from "@/components/logo";
 import { GradientBlob } from "@/components/marketing/gradient-blob";
 
 export function FocusedPageShell({
@@ -23,11 +24,11 @@ export function FocusedPageShell({
     <main className="relative isolate flex min-h-[calc(100svh-4.5rem)] items-center overflow-hidden bg-[radial-gradient(circle_at_15%_0%,var(--brand-cream-deep),transparent_34%),linear-gradient(145deg,var(--background),var(--secondary)_75%,var(--background))] px-4 py-12 sm:px-6 sm:py-16">
       <GradientBlob
         className="marketing-drift -left-32 top-16 w-72 opacity-60 sm:w-96"
-        tone="sage"
+        tone="navy"
       />
       <GradientBlob
         className="marketing-drift-slow -right-32 bottom-0 w-72 opacity-50 sm:w-96"
-        tone="terracotta"
+        tone="gold"
       />
 
       <div className="relative mx-auto grid w-full max-w-5xl gap-10 lg:grid-cols-[0.82fr_1fr] lg:items-center lg:gap-16">
@@ -41,9 +42,7 @@ export function FocusedPageShell({
           </Link>
 
           <div className="space-y-4">
-            <span className="grid size-12 place-items-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/15">
-              <Leaf className="size-5" aria-hidden />
-            </span>
+            <Logo variant="lockup" alt="Psychéon" className="h-32 w-auto" />
             <p className="text-sm font-semibold tracking-[0.16em] text-primary uppercase">
               {eyebrow}
             </p>
