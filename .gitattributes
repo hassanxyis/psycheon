@@ -1,0 +1,19 @@
+# Normalise line endings to LF.
+#
+# The whole index is already LF, so this changes nothing today. It exists to
+# keep that true on a machine with core.autocrlf=true, where a fresh clone would
+# otherwise check out CRLF.
+#
+# That matters beyond taste because of src/app/brand.css: it is a mirror of
+# web/app/brand.css in the Percentile repository, and the two are kept in sync
+# by being byte-identical. Percentile pins LF in its own .gitattributes. Without
+# this file the same content would differ by one byte per line on Windows, and
+# the drift check that is the entire justification for copying rather than
+# packaging would report a difference on every line while nothing had drifted.
+* text=auto eol=lf
+
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.ico  binary
+*.webp binary
