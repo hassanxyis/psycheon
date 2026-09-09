@@ -30,6 +30,9 @@ export function SiteFooter() {
             <Link className="transition-colors hover:text-primary" href="/psychologists">
               Psychologists
             </Link>
+            <Link className="transition-colors hover:text-primary" href="/percentile">
+              Percentile
+            </Link>
             <Link className="transition-colors hover:text-primary" href="/contact">
               Contact
             </Link>

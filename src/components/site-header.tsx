@@ -20,6 +20,7 @@ const navLinks = [
   { href: "/", label: "Home" },
   { href: "/feed", label: "Community" },
   { href: "/psychologists", label: "Psychologists" },
+  { href: "/percentile", label: "Percentile" },
   { href: "/contact", label: "Contact" },
 ];
 
@@ -40,7 +41,7 @@ export async function SiteHeader() {
         </Link>
 
         <nav aria-label="Primary navigation" className="flex items-center gap-1 sm:gap-2">
-          {/* Four links plus the account control does not fit on a phone, so
+          {/* Five links plus the account control does not fit on a phone, so
               the links collapse into the menu below the sm breakpoint. */}
           <div className="hidden items-center gap-1 sm:flex sm:gap-2">
             {navLinks.map((link) => (
