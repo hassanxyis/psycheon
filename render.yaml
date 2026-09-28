@@ -1,0 +1,46 @@
+# Render Blueprint — https://render.com/docs/blueprint-spec
+#
+# Deploys Psychéon (Next.js 16 + Supabase) as a Docker web service using the
+# Dockerfile in this repo.
+#
+# How to use:
+#   1. Dashboard: "New +" -> "Blueprint" -> select this repo.
+#      Render detects render.yaml automatically; you will be prompted to fill
+#      in the three `sync: false` env vars below.
+#   2. CLI:       `render blueprint launch` (see https://render.com/docs/cli)
+#
+# For a single service instead (no blueprint): "New +" -> "Web Service",
+# choose "Docker" as the Runtime, and add the same env vars under
+# Environment -> Environment Variables.
+#
+# Notes
+# -----
+# * Render translates service env vars into Docker build args automatically
+#   (https://render.com/docs/docker), which is how the NEXT_PUBLIC_* values
+#   reach the `next build` step in the Dockerfile.
+# * The Supabase publishable key (formerly "anon") is public by design and safe
+#   in the client bundle / image; RLS protects the data.
+# * Supabase migrations are not run by this service — apply them in the
+#   Supabase dashboard or via the Supabase CLI.
+
+services:
+  - type: web
+    name: psycheon
+    runtime: docker
+    # Closest Render region to users in Pakistan; any other region also works.
+    region: singapore
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /
+    # Smallest paid plan. The `free` plan works for previews but spins down
+    # after 15 min idle and is not recommended for production.
+    plan: 0.5c-512mb
+    envVars:
+      # Render prompts for a value when the blueprint is first created.
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+        sync: false
+      # Your production origin, e.g. https://psycheon.onrender.com —
+      # used for OAuth / magic-link redirects and metadata.
+      - key: NEXT_PUBLIC_SITE_URL
+        sync: false

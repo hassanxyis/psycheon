@@ -34,3 +34,41 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Deploying on Render
+
+The repo includes everything needed for a Docker-based deploy on Render:
+
+- `Dockerfile` — multi-stage production image (standalone Next.js server, non-root user).
+- `render.yaml` — Render Blueprint that wires up the service and its environment variables.
+- `.dockerignore` — keeps secrets and dev files out of the image.
+
+### Via Blueprint (recommended)
+
+1. Push this repo to GitHub/GitLab.
+2. In the [Render Dashboard](https://dashboard.render.com), click **New + → Blueprint** and select the repo.
+3. When prompted, set the three environment variables:
+   - `NEXT_PUBLIC_SUPABASE_URL` — Supabase dashboard → Project Settings → API
+   - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` — the publishable (formerly "anon") key
+   - `NEXT_PUBLIC_SITE_URL` — your production origin, e.g. `https://psycheon.onrender.com`
+
+### Via Web Service (no blueprint)
+
+1. **New + → Web Service**, connect the repo.
+2. Set **Runtime** to **Docker** (Dockerfile path stays `./Dockerfile`).
+3. Add the same three env vars under **Environment**.
+4. Deploy. Render runs Supabase migrations manually in the Supabase dashboard if needed.
+
+### Building the image locally
+
+```bash
+docker build \
+  --build-arg NEXT_PUBLIC_SITE_URL=http://localhost:3000 \
+  --build-arg NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL \
+  --build-arg NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=$NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY \
+  -t psycheon .
+
+docker run --rm -p 3000:10000 \
+  -e NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL \
+  -e NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=$NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY \
+  psycheon
+```
