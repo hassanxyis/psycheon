@@ -2,6 +2,13 @@
 -- All 7 entities from the MVP plan are created up front so that Phases 3-6
 -- (directory, booking, admin) need no migration rewrites. Only profiles/posts/
 -- comments/likes/reports get UI in Phase 1-2.
+--
+-- Unlike 0002-0009, this file is deliberately NOT re-runnable. Those use
+-- `drop ... if exists` so they can be applied again safely; here the bare
+-- `create type` / `create table` are the point. Re-running this on a database
+-- that already has data should fail loudly with 42710 rather than proceed --
+-- there is no version of "re-initialise the schema" that is safe once there are
+-- real bookings, and a guarded drop would be an invitation to find out.
 
 create extension if not exists "pgcrypto";
 

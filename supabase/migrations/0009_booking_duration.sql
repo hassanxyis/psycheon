@@ -19,7 +19,7 @@
 -- intervals rather than instants.
 
 alter table public.bookings
-  add column duration_minutes smallint
+  add column if not exists duration_minutes smallint
     check (duration_minutes is null or duration_minutes between 15 and 240);
 
 -- Nullable rather than `not null default 60`: a default would state a duration

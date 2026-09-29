@@ -64,6 +64,11 @@ begin
 end;
 $$;
 
+-- Dropped first so the file re-runs cleanly. `create trigger` has no
+-- IF NOT EXISTS, and the function above already uses `create or replace`, so
+-- this was the only statement that could fail with 42710.
+drop trigger if exists availability_guard_overlap on public.availability;
+
 create trigger availability_guard_overlap
   before insert or update on public.availability
   for each row execute function public.guard_availability_overlap();

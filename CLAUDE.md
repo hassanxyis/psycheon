@@ -143,6 +143,26 @@ There is no `supabase/config.toml` and no linked CLI project -- migrations are
 applied by hand (dashboard SQL editor), so `supabase db push` will not work
 until the project is linked.
 
+**Every migration from 0002 on is re-runnable, and new ones must be too.**
+Applying by hand means a file gets pasted twice, or aborts partway and gets
+retried. `create policy` and `create trigger` have no `IF NOT EXISTS`, so each is
+preceded by `drop ... if exists`; columns and indexes use `if not exists`. This is
+not tidiness. 0003 declares 31 policies in one file: without the drops, a re-run
+fails on the first with `42710 duplicate_object` -- which reads like a harmless
+"already exists" -- and every policy after it is silently never created. On the
+file that *is* the security boundary, the app keeps working and the guard is just
+gone. 0004 was a live near-miss: two `create policy` statements, and the abort on
+the first would have skipped `"admins view all comments"`, hiding reported
+comments on moderated posts from the admins allowed to delete them.
+
+**0001 is the deliberate exception** -- bare `create type` / `create table`, so
+re-running it on a populated database fails loudly instead of proceeding. There
+is no safe version of "re-initialise the schema" once real bookings exist.
+
+`scripts/check-policies.sql` is the companion to that: paste it into the SQL
+editor to count policies per table against expected, and confirm the triggers and
+`security definer` grants a client cannot see.
+
 Nothing records what has been applied, so **`npm run check:migrations` asks the
 database**. It probes for the column, function or function *signature* each
 migration introduces, using the publishable key from `.env.local`; read-only, and

@@ -17,7 +17,7 @@
 -- ---------------------------------------------------------------------------
 
 alter table public.psychologists
-  add column session_minutes smallint not null default 60
+  add column if not exists session_minutes smallint not null default 60
     check (session_minutes between 15 and 240);
 
 -- ---------------------------------------------------------------------------
@@ -36,9 +36,9 @@ alter table public.psychologists
 -- ---------------------------------------------------------------------------
 
 alter table public.bookings
-  drop constraint bookings_no_double_booking;
+  drop constraint if exists bookings_no_double_booking;
 
-create unique index bookings_no_double_booking
+create unique index if not exists bookings_no_double_booking
   on public.bookings (psychologist_id, slot_time)
   where status <> 'cancelled';
 
@@ -94,7 +94,7 @@ grant execute on function public.booked_slots(uuid, timestamptz, timestamptz)
 -- the whole where clause.
 -- ---------------------------------------------------------------------------
 
-create index bookings_psychologist_slot_idx
+create index if not exists bookings_psychologist_slot_idx
   on public.bookings (psychologist_id, slot_time);
 
 -- ---------------------------------------------------------------------------
@@ -135,6 +135,11 @@ $$;
 revoke all on function private.has_booked(uuid) from public;
 grant execute on function private.has_booked(uuid) to authenticated;
 
+-- `create policy` has no IF NOT EXISTS, and a bare re-run aborts the whole file
+-- with 42710 -- which on this file would skip the index below and leave the
+-- policy's own lookup unindexed. Dropping first makes the file re-runnable.
+drop policy if exists "members view psychologists they have booked" on public.psychologists;
+
 create policy "members view psychologists they have booked"
   on public.psychologists for select
   to authenticated
@@ -143,5 +148,5 @@ create policy "members view psychologists they have booked"
 -- has_booked() filters on user_id, and the policy is evaluated per psychologist
 -- row -- so lead with user_id here. bookings_psychologist_slot_idx above leads
 -- with psychologist_id and cannot serve this.
-create index bookings_user_psychologist_idx
+create index if not exists bookings_user_psychologist_idx
   on public.bookings (user_id, psychologist_id);

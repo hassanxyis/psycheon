@@ -8,16 +8,16 @@
 -- both policies pick these up automatically.
 
 alter table public.psychologists
-  add column years_experience smallint
+  add column if not exists years_experience smallint
     check (years_experience is null or years_experience between 0 and 70),
   -- text[] to match `specialties`, so the admin form parses both the same way.
-  add column languages text[] not null default '{}',
+  add column if not exists languages text[] not null default '{}',
   -- Whole rupees. integer not numeric -- PKR has no meaningful minor unit here,
   -- and a fee is displayed, never arithmetic'd.
-  add column session_fee integer
+  add column if not exists session_fee integer
     check (session_fee is null or session_fee >= 0),
-  add column location text;
+  add column if not exists location text;
 
 -- Directory filtering by language mirrors how posts.tags is indexed in 0001.
-create index psychologists_languages_idx
+create index if not exists psychologists_languages_idx
   on public.psychologists using gin (languages);
