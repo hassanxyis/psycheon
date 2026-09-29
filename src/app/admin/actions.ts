@@ -2,6 +2,7 @@
 
 import { refresh } from "next/cache";
 
+import type { AdminActionState } from "@/lib/action-state";
 import { requireAdmin } from "@/lib/admin";
 import { createClient } from "@/lib/supabase/server";
 import type {
@@ -11,9 +12,11 @@ import type {
   UserRole,
 } from "@/lib/types/database";
 
-export type AdminActionState = { error: string | null; message: string | null };
-
-export const emptyAdminState: AdminActionState = { error: null, message: null };
+// Re-exported so existing `import type { AdminActionState } from
+// "@/app/admin/actions"` keeps working. A type export is erased at compile time
+// and so is allowed here; `emptyAdminState` was a plain object and was not --
+// it now lives in "@/lib/action-state" alongside this type.
+export type { AdminActionState };
 
 /**
  * Every action re-runs requireAdmin() rather than trusting that the caller

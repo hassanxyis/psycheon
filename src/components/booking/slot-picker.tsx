@@ -3,10 +3,8 @@
 import { useState, useTransition } from "react";
 import { CalendarClock } from "lucide-react";
 
-import {
-  createBooking,
-  emptyBookingState,
-} from "@/app/(booking)/actions";
+import { createBooking } from "@/app/(booking)/actions";
+import { emptyBookingState } from "@/lib/action-state";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";

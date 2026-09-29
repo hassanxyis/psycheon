@@ -4,11 +4,8 @@ import { useState, useTransition } from "react";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 
-import {
-  createPsychologist,
-  emptyAdminState,
-  updatePsychologist,
-} from "@/app/admin/actions";
+import { createPsychologist, updatePsychologist } from "@/app/admin/actions";
+import { emptyAdminState } from "@/lib/action-state";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,

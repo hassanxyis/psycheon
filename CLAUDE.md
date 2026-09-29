@@ -85,6 +85,25 @@ Actions return a state object (`{ error, message }` or `{ error }`) and are
 driven by `useActionState`, or called inside `useTransition` for button-style
 actions that toast the result. They do not throw for user-facing failures.
 
+**Those state types and their initial values live in `src/lib/action-state.ts`,
+not beside the actions.** A `"use server"` file may export *only* async
+functions. A `type` export is erased and therefore fine, but exporting a plain
+object makes Next throw
+
+```
+A "use server" file can only export async functions, found object
+```
+
+at module evaluation -- which crashes the entire page that imports any action
+from that file, not just the code using the constant. `emptyAdminState` was
+declared in `admin/actions.ts` and took down `/admin/psychologists` the first
+time anyone clicked Edit.
+
+Nothing else catches this: `tsc --noEmit`, `eslint` and `next build` all pass,
+because it is a runtime rule about the module graph. `npm run lint` therefore
+chains `scripts/check-use-server.mjs`, which fails on any non-async, non-type
+export from a `"use server"` file.
+
 ## UI components are Base UI, not Radix
 
 `components.json` selects the `base` registry, so shadcn generated components

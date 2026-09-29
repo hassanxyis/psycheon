@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
+    "lint": "eslint && node scripts/check-use-server.mjs",
     "check:slots": "node scripts/check-booking-slots.mjs",
     "check:migrations": "node scripts/check-migrations.mjs",
     "check:rpc": "node scripts/check-booked-slots-rpc.mjs"

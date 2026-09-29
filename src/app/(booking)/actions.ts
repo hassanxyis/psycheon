@@ -10,6 +10,7 @@ import {
   canCancel,
   isSlotOffered,
 } from "@/lib/booking";
+import type { BookingActionState } from "@/lib/action-state";
 import {
   getAvailabilityForPsychologist,
   getBookedSlots,
@@ -17,9 +18,10 @@ import {
 } from "@/lib/queries";
 import { createClient, getAuthUser } from "@/lib/supabase/server";
 
-export type BookingActionState = { error: string | null; message: string | null };
-
-export const emptyBookingState: BookingActionState = { error: null, message: null };
+// Re-exported so callers can keep importing the type from here. Only the type:
+// a "use server" file may export nothing but async functions, and
+// `emptyBookingState` is a plain object -- it lives in "@/lib/action-state".
+export type { BookingActionState };
 
 /**
  * Identity comes from the verified JWT, never from a form field. RLS enforces
