@@ -27,10 +27,11 @@
 FROM node:22-alpine AS deps
 WORKDIR /app
 
-# --frozen-lockfile installs exactly what package-lock.json pins.
+# `npm ci` installs exactly what package-lock.json pins, and fails outright if
+# the lockfile and package.json disagree.
 COPY package.json package-lock.json ./
 RUN --mount=type=cache,target=/root/.npm \
-    npm ci --frozen-lockfile
+    npm ci
 
 ########################
 # Stage 2 — builder
@@ -64,9 +65,14 @@ RUN --mount=type=cache,target=/app/.next/cache \
 FROM node:22-alpine AS runner
 WORKDIR /app
 
+# PORT is set here, not left to the platform. Render does not inject PORT for
+# Docker services (its docs list it as optional), and the standalone server
+# falls back to `PORT || 3000` -- so without this the container would listen on
+# 3000 while Render probed 10000, and the deploy would fail its port check.
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
-    HOSTNAME=0.0.0.0
+    HOSTNAME=0.0.0.0 \
+    PORT=10000
 
 # Run as a non-root user (nextjs uid/gid 1001).
 RUN addgroup --system --gid 1001 nodejs \
@@ -85,8 +91,8 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 USER nextjs
 
-# Render injects PORT at runtime (default 10000) and routes traffic to it;
-# HOSTNAME is set above so the server binds to the container's interface.
+# Matches the PORT set above. HOSTNAME=0.0.0.0 is what makes the server bind to
+# the container's external interface rather than loopback.
 EXPOSE 10000
 
 CMD ["node", "server.js"]
