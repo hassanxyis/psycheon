@@ -44,8 +44,26 @@ export type BookableSlot = {
   iso: string;
   /** Clinic-local label, e.g. "10:00 am". */
   label: string;
-  /** Already held by a live (non-cancelled) booking. */
+  /**
+   * Overlaps a live (non-cancelled) booking. Not the same as "starts at the
+   * same instant" -- see the interval note on BookedSlot.
+   */
   taken: boolean;
+};
+
+/**
+ * A live booking, as `booked_slots()` reports it (migration 0009).
+ *
+ * The duration matters because it is stored per booking: an appointment made
+ * when the psychologist ran 60-minute sessions is still 60 minutes after they
+ * switch to 90. Comparing start instants alone would miss the case that
+ * motivated 0009 -- bookings at 10:00 and 11:00 made at 60 minutes stop being
+ * compatible once the session length is 90, and the 10:00 runs straight through
+ * the 11:00 even though the two instants remain distinct.
+ */
+export type BookedSlot = {
+  slotTime: string;
+  durationMinutes: number;
 };
 
 export type BookableDay = {
@@ -167,17 +185,31 @@ function isoDate(year: number, month: number, day: number) {
 export function buildCalendar(opts: {
   availability: Availability[];
   sessionMinutes: number;
-  /** Live booked instants, from the booked_slots() function (migration 0007). */
-  bookedSlots: string[];
+  /** Live bookings, from the booked_slots() function (migration 0009). */
+  bookedSlots: BookedSlot[];
   now: Date;
   horizonDays?: number;
 }): BookableDay[] {
   const { availability, sessionMinutes, bookedSlots, now } = opts;
   const horizonDays = opts.horizonDays ?? BOOKING_HORIZON_DAYS;
 
-  // Compare as epoch milliseconds: two ISO strings for the same instant can
-  // differ textually ("...Z" vs "+00:00"), and Postgres returns the offset form.
-  const taken = new Set(bookedSlots.map((slot) => new Date(slot).getTime()));
+  // Half-open [start, end) intervals in epoch milliseconds. Milliseconds rather
+  // than the ISO strings because two strings for the same instant can differ
+  // textually ("...Z" vs "+00:00") and Postgres returns the offset form.
+  const busy = bookedSlots.map((booking) => {
+    const start = new Date(booking.slotTime).getTime();
+    return { start, end: start + booking.durationMinutes * 60_000 };
+  });
+
+  /**
+   * Half-open on both sides, so a session ending exactly when another begins is
+   * not a clash -- that is the normal back-to-back case and rejecting it would
+   * make every second slot unbookable.
+   */
+  const overlapsBooking = (start: number) => {
+    const end = start + sessionMinutes * 60_000;
+    return busy.some((booked) => start < booked.end && end > booked.start);
+  };
 
   const windowsByDay = new Map<number, Availability[]>();
   for (const window of availability) {
@@ -204,26 +236,35 @@ export function buildCalendar(opts: {
     const windows = windowsByDay.get(dayOfWeek);
     if (!windows) continue;
 
-    const slots: BookableSlot[] = [];
+    // Keyed by start minute, not pushed to an array: nothing stops an admin
+    // adding 10:00-13:00 and 11:00-14:00 on the same day, and those windows
+    // generate 11:00 and 12:00 twice. A duplicate slot would give the picker
+    // two React children with the same key and make one of them unselectable.
+    // De-duplicating here means the whole calendar is unique by construction.
+    const byStart = new Map<number, BookableSlot>();
 
     for (const window of windows) {
       for (const minutes of slotStartsIn(window, sessionMinutes)) {
+        if (byStart.has(minutes)) continue;
+
         const instant = clinicInstant(year, month, day, minutes);
         if (instant.getTime() <= now.getTime()) continue;
 
-        slots.push({
+        byStart.set(minutes, {
           iso: instant.toISOString(),
           label: formatTime(minutesToTime(minutes)),
-          taken: taken.has(instant.getTime()),
+          taken: overlapsBooking(instant.getTime()),
         });
       }
     }
 
-    if (slots.length === 0) continue;
+    if (byStart.size === 0) continue;
 
-    // Two windows on one day (a morning and an evening sitting) arrive as
-    // separate rows in whatever order the query returned them.
-    slots.sort((a, b) => a.iso.localeCompare(b.iso));
+    // Two sittings on one day (a morning and an evening) arrive as separate
+    // rows in whatever order the query returned them.
+    const slots = [...byStart.values()].sort((a, b) =>
+      a.iso.localeCompare(b.iso),
+    );
 
     days.push({
       date: isoDate(year, month, day),

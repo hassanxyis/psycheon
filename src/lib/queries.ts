@@ -1,3 +1,4 @@
+import type { BookedSlot } from "@/lib/booking";
 import type {
   Availability,
   BookingStatus,
@@ -55,6 +56,7 @@ type MemberBookingRow = {
   status: BookingStatus;
   notes: string | null;
   created_at: string;
+  duration_minutes: number | null;
   psychologist_id: string;
   psychologist: {
     name: string;
@@ -72,6 +74,7 @@ type AdminBookingRow = {
   notes: string | null;
   created_at: string;
   paid_at: string | null;
+  duration_minutes: number | null;
   user_id: string;
   psychologist_id: string;
   member: { display_name: string } | null;
@@ -426,7 +429,7 @@ export async function getBookedSlots(opts: {
   psychologistId: string;
   from: Date;
   to: Date;
-}): Promise<string[]> {
+}): Promise<BookedSlot[]> {
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("booked_slots", {
     p_psychologist_id: opts.psychologistId,
@@ -435,7 +438,16 @@ export async function getBookedSlots(opts: {
   });
 
   if (error) throw new Error(`Failed to load booked slots: ${error.message}`);
-  return (data ?? []) as string[];
+
+  const rows = (data ?? []) as unknown as {
+    slot_time: string;
+    duration_minutes: number;
+  }[];
+
+  return rows.map((row) => ({
+    slotTime: row.slot_time,
+    durationMinutes: row.duration_minutes,
+  }));
 }
 
 /**
@@ -450,7 +462,7 @@ export async function getBookingsForUser(userId: string): Promise<MemberBooking[
   const { data, error } = await supabase
     .from("bookings")
     .select(
-      "id, slot_time, status, notes, created_at, psychologist_id, psychologist:psychologists!bookings_psychologist_id_fkey(name, credentials, location, session_minutes, is_active)",
+      "id, slot_time, status, notes, created_at, duration_minutes, psychologist_id, psychologist:psychologists!bookings_psychologist_id_fkey(name, credentials, location, session_minutes, is_active)",
     )
     .eq("user_id", userId)
     .order("slot_time", { ascending: true });
@@ -470,9 +482,13 @@ export async function getBookingsForUser(userId: string): Promise<MemberBooking[
     psychologistName: row.psychologist?.name ?? "A psychologist",
     psychologistCredentials: row.psychologist?.credentials ?? null,
     location: row.psychologist?.location ?? null,
-    // No `?? 60` default: a wrong duration stated confidently is worse than no
-    // duration, and 60 would be a guess dressed as a fact.
-    sessionMinutes: row.psychologist?.session_minutes ?? null,
+    // The booking's own duration first -- that is what this appointment is,
+    // even if the psychologist's current session length has since changed
+    // (migration 0009). Pre-0009 rows have none, so fall back to the current
+    // value, which is what they were shown as before the column existed. No
+    // `?? 60`: a wrong duration stated confidently is worse than none.
+    sessionMinutes:
+      row.duration_minutes ?? row.psychologist?.session_minutes ?? null,
     psychologistListed: row.psychologist?.is_active ?? false,
   }));
 }
@@ -492,7 +508,7 @@ export async function getBookingsForAdmin(opts: {
   let query = supabase
     .from("bookings")
     .select(
-      "id, slot_time, status, notes, created_at, paid_at, user_id, psychologist_id, member:profiles!bookings_user_id_fkey(display_name), psychologist:psychologists!bookings_psychologist_id_fkey(name, session_minutes)",
+      "id, slot_time, status, notes, created_at, paid_at, duration_minutes, user_id, psychologist_id, member:profiles!bookings_user_id_fkey(display_name), psychologist:psychologists!bookings_psychologist_id_fkey(name, session_minutes)",
     )
     .order("slot_time", { ascending: true })
     .limit(250);
@@ -512,10 +528,12 @@ export async function getBookingsForAdmin(opts: {
     memberId: row.user_id,
     memberName: row.member?.display_name ?? "A member",
     psychologistName: row.psychologist?.name ?? "A psychologist",
-    // "admins manage psychologists" is `for all`, so this embed always resolves
-    // for an admin -- listed or not. Null here would mean the row is genuinely
-    // gone, and inventing 60 would hide that.
-    sessionMinutes: row.psychologist?.session_minutes ?? null,
+    // The booking's own duration first (migration 0009), same as the member
+    // view. "admins manage psychologists" is `for all`, so the embed always
+    // resolves for an admin -- null here means the row is genuinely gone, and
+    // inventing 60 would hide that.
+    sessionMinutes:
+      row.duration_minutes ?? row.psychologist?.session_minutes ?? null,
   }));
 }
 

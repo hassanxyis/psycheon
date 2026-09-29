@@ -338,6 +338,9 @@ export async function addAvailabilitySlot(
     end_time: endTime,
   });
 
+  // Passed through as-is, which covers 23514 from availability_guard_overlap
+  // (migration 0008) -- its message already names the hours of the window being
+  // clashed with, and nothing this layer knows would improve on that.
   if (error) return { error: error.message, message: null };
 
   refresh();

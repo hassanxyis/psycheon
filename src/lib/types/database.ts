@@ -198,6 +198,8 @@ export interface Database {
           slot_time: string;
           status: BookingStatus;
           notes: string | null;
+          /** Snapshot of the session length when booked. Null pre-0009. */
+          duration_minutes: number | null;
           payment_provider: string | null;
           payment_ref: string | null;
           paid_at: string | null;
@@ -211,11 +213,13 @@ export interface Database {
           slot_time: string;
           status?: BookingStatus;
           notes?: string | null;
+          duration_minutes?: number | null;
         };
         Update: {
           slot_time?: string;
           status?: BookingStatus;
           notes?: string | null;
+          duration_minutes?: number | null;
           payment_provider?: string | null;
           payment_ref?: string | null;
           paid_at?: string | null;
@@ -250,10 +254,10 @@ export interface Database {
     Views: Record<string, never>;
     Functions: {
       /**
-       * Live booked instants for one psychologist, without the identity of who
-       * booked them (migration 0007). RLS cannot express "expose slot_time but
-       * not user_id" -- policies are row-level -- so the slot picker reads this
-       * security definer function instead of the table.
+       * Live bookings for one psychologist -- start instant and duration, but
+       * not who booked them (migrations 0007, 0009). RLS cannot express "expose
+       * slot_time but not user_id" -- policies are row-level -- so the slot
+       * picker reads this security definer function instead of the table.
        */
       booked_slots: {
         Args: {
@@ -261,7 +265,7 @@ export interface Database {
           p_from: string;
           p_to: string;
         };
-        Returns: string[];
+        Returns: { slot_time: string; duration_minutes: number }[];
       };
     };
     Enums: {

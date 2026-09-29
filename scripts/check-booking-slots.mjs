@@ -113,7 +113,7 @@ console.log("\nbooked slots are marked, not hidden");
     sessionMinutes: 60,
     // Offset form, as Postgres returns it -- not the "Z" form. Comparing the
     // strings directly rather than the instants would miss this.
-    bookedSlots: ["2026-10-05T06:00:00+00:00"],
+    bookedSlots: [{ slotTime: "2026-10-05T06:00:00+00:00", durationMinutes: 60 }],
     now: MONDAY,
     horizonDays: 1,
   });
@@ -137,6 +137,79 @@ console.log("\nbooked slots are marked, not hidden");
     "an invented slot is refused",
     isSlotOffered("2026-10-05T22:00:00.000Z", days),
     false,
+  );
+}
+
+console.log("\na longer booking blocks every slot it runs through");
+{
+  // The case migration 0009 exists for. A 90-minute booking at 10:00 runs to
+  // 11:30, so an 11:00 start is not bookable -- even though 11:00 and 10:00 are
+  // distinct instants and the unique index would happily accept both.
+  const days = buildCalendar({
+    availability: [window(1, "10:00:00", "14:00:00")],
+    sessionMinutes: 60,
+    bookedSlots: [{ slotTime: "2026-10-05T05:00:00Z", durationMinutes: 90 }],
+    now: MONDAY,
+    horizonDays: 1,
+  });
+
+  check(
+    "10:00 and 11:00 both blocked, 12:00 free",
+    days[0].slots.map((slot) => [slot.label, slot.taken]),
+    [
+      ["10:00 am", true],
+      ["11:00 am", true],
+      ["12:00 pm", false],
+      ["1:00 pm", false],
+    ],
+  );
+}
+
+console.log("\na new longer session is blocked by what it would run into");
+{
+  // The mirror case: the psychologist has switched to 90-minute sessions and an
+  // old 60-minute booking sits at 11:00. A new 90-minute slot at 10:00 would
+  // run to 11:30 and collide, so 10:00 must be unavailable.
+  const days = buildCalendar({
+    availability: [window(1, "10:00:00", "14:00:00")],
+    sessionMinutes: 90,
+    bookedSlots: [{ slotTime: "2026-10-05T06:00:00Z", durationMinutes: 60 }],
+    now: MONDAY,
+    horizonDays: 1,
+  });
+
+  // Only two slots fit: 13:00 would run to 14:30 and overrun the window.
+  // 10:00-11:30 and 11:30-13:00 both cross the 11:00-12:00 booking.
+  check(
+    "both slots blocked by the 11:00 booking",
+    days[0].slots.map((slot) => [slot.label, slot.taken]),
+    [
+      ["10:00 am", true],
+      ["11:30 am", true],
+    ],
+  );
+}
+
+console.log("\nback-to-back bookings do not block each other");
+{
+  // A booking ending exactly when a slot starts is not a clash -- treating it as
+  // one would make every second slot unbookable.
+  const days = buildCalendar({
+    availability: [window(1, "10:00:00", "13:00:00")],
+    sessionMinutes: 60,
+    bookedSlots: [{ slotTime: "2026-10-05T05:00:00Z", durationMinutes: 60 }],
+    now: MONDAY,
+    horizonDays: 1,
+  });
+
+  check(
+    "only the exact hour is taken",
+    days[0].slots.map((slot) => [slot.label, slot.taken]),
+    [
+      ["10:00 am", true],
+      ["11:00 am", false],
+      ["12:00 pm", false],
+    ],
   );
 }
 
@@ -206,6 +279,55 @@ console.log("\ntwo sittings on one day merge and sort");
     "sorted by time",
     days[0].slots.map((slot) => slot.label),
     ["10:00 am", "5:00 pm"],
+  );
+}
+
+console.log("\noverlapping windows do not produce duplicate slots");
+{
+  // Migration 0008 refuses to store these, but rows predating it can exist and
+  // the picker keys on slot.iso -- a duplicate would collide as a React key.
+  const days = buildCalendar({
+    availability: [
+      window(1, "10:00:00", "13:00:00"),
+      window(1, "11:00:00", "14:00:00"),
+    ],
+    sessionMinutes: 60,
+    bookedSlots: [],
+    now: MONDAY,
+    horizonDays: 1,
+  });
+
+  check(
+    "union of both windows, each slot once",
+    days[0].slots.map((slot) => slot.label),
+    ["10:00 am", "11:00 am", "12:00 pm", "1:00 pm"],
+  );
+  check(
+    "every iso is unique",
+    new Set(days[0].slots.map((slot) => slot.iso)).size,
+    days[0].slots.length,
+  );
+}
+
+console.log("\nback-to-back windows are not treated as overlapping");
+{
+  // The 0008 trigger compares half-open, so 13:00 can both end one sitting and
+  // start the next. These must yield four distinct slots, not three.
+  const days = buildCalendar({
+    availability: [
+      window(1, "10:00:00", "12:00:00"),
+      window(1, "12:00:00", "14:00:00"),
+    ],
+    sessionMinutes: 60,
+    bookedSlots: [],
+    now: MONDAY,
+    horizonDays: 1,
+  });
+
+  check(
+    "adjacent windows both contribute",
+    days[0].slots.map((slot) => slot.label),
+    ["10:00 am", "11:00 am", "12:00 pm", "1:00 pm"],
   );
 }
 

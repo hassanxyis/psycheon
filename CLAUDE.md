@@ -193,6 +193,14 @@ Three things there are easy to undo by accident:
 - **`session_minutes` lives on `psychologists`** (migration 0007) and is what
   divides a window into slots. A slot is only offered if the whole session fits
   inside the window.
+- **A booking stores its own `duration_minutes`** (0009) rather than reading the
+  psychologist's current one. Two reasons, and the second is the serious one:
+  a session booked at 60 minutes is still 60 minutes after the psychologist
+  switches to 90; and `bookings_no_double_booking` is unique on the *exact*
+  `slot_time`, so bookings at 10:00 and 11:00 made at 60 minutes silently start
+  overlapping the moment the length becomes 90. `buildCalendar` therefore
+  compares half-open **intervals**, not start instants. Null on pre-0009 rows --
+  fall back to `session_minutes`, never to a literal 60.
 - **`isSlotOffered()` in `createBooking` is not decoration.** No constraint ties
   `bookings.slot_time` back to an `availability` row, so the unique index would
   happily accept 3am on a Sunday. That check is the only thing between a crafted
@@ -220,8 +228,17 @@ present. It used to default to 60, which turned an unreadable row into a
 confidently wrong duration -- the failure mode worth avoiding is a fabricated
 fact, not a missing one.
 
-`booked_slots()` (0007) is a `security definer` function because RLS cannot
-express what the picker needs. "users view their own bookings" is correct -- a
+**Overlapping availability windows are refused** by
+`availability_guard_overlap` (0008), raising `23514`. Nothing before it stopped
+one psychologist having Monday 10:00-13:00 *and* Monday 11:00-14:00, which both
+duplicated slots and -- worse, with a half-hour offset -- generated genuinely
+distinct slots whose sessions overlapped. A trigger rather than
+`exclude using gist`, because there is no built-in range type for
+`time without time zone`. Comparisons are half-open throughout, so back-to-back
+sittings are legal.
+
+`booked_slots()` (0007, signature changed in 0009) is a `security definer`
+function because RLS cannot express what the picker needs. "users view their own bookings" is correct -- a
 booking reveals that a named person is seeing a psychologist -- but policies are
 row-level, so there is no way to expose `slot_time` without also exposing
 `user_id`. The function returns bare instants and no identity. Read it, never

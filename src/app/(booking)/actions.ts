@@ -92,6 +92,11 @@ export async function createBooking(
     psychologist_id: psychologistId,
     slot_time: slotTime,
     notes: notes || null,
+    // Snapshotted, not read live later (migration 0009). How long this
+    // appointment runs is a fact about the appointment; if the psychologist
+    // switches to 90-minute sessions next month, this one is still the length it
+    // was booked at -- and the calendar needs that to detect overlaps.
+    duration_minutes: psychologist.session_minutes,
   });
 
   // 23505 is the partial unique index from migration 0007 -- someone else took
