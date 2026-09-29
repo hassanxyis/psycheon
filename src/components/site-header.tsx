@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LogOut, Menu, Shield, UserRound } from "lucide-react";
+import { CalendarCheck, LogOut, Menu, Shield, UserRound } from "lucide-react";
 
 import { signOut } from "@/app/(auth)/actions";
 import { Logo } from "@/components/logo";
@@ -92,6 +92,10 @@ export async function SiteHeader() {
                     ))}
                     <DropdownMenuSeparator />
                   </div>
+                  <DropdownMenuItem render={<Link href="/bookings" />}>
+                    <CalendarCheck aria-hidden />
+                    Your bookings
+                  </DropdownMenuItem>
                   <DropdownMenuItem render={<Link href="/profile" />}>
                     <UserRound aria-hidden />
                     Your profile

@@ -24,9 +24,11 @@ const features = [
   {
     title: "Care that fits real life",
     description:
-      "Choose an in-clinic time, pay in the way that works for you, and keep the next step simple.",
+      "Pick an in-clinic time that suits you, pay at the clinic, and keep the next step simple.",
     icon: CalendarCheck,
-    action: { label: "Join to be notified", href: "/signup" },
+    // Booking starts from a psychologist's profile -- there is no standalone
+    // "book" page to send someone to, because you choose the person first.
+    action: { label: "Book a session", href: "/psychologists" },
     tone: "bg-primary text-primary-foreground",
   },
 ];

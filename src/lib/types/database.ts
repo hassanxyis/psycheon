@@ -133,6 +133,7 @@ export interface Database {
           languages: string[];
           session_fee: number | null;
           location: string | null;
+          session_minutes: number;
           created_at: string;
           updated_at: string;
         };
@@ -148,6 +149,7 @@ export interface Database {
           languages?: string[];
           session_fee?: number | null;
           location?: string | null;
+          session_minutes?: number;
         };
         Update: {
           name?: string;
@@ -160,6 +162,7 @@ export interface Database {
           languages?: string[];
           session_fee?: number | null;
           location?: string | null;
+          session_minutes?: number;
           updated_at?: string;
         };
         Relationships: [];
@@ -245,7 +248,22 @@ export interface Database {
       };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      /**
+       * Live booked instants for one psychologist, without the identity of who
+       * booked them (migration 0007). RLS cannot express "expose slot_time but
+       * not user_id" -- policies are row-level -- so the slot picker reads this
+       * security definer function instead of the table.
+       */
+      booked_slots: {
+        Args: {
+          p_psychologist_id: string;
+          p_from: string;
+          p_to: string;
+        };
+        Returns: string[];
+      };
+    };
     Enums: {
       user_role: UserRole;
       post_status: PostStatus;

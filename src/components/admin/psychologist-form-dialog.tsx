@@ -170,14 +170,34 @@ export function PsychologistFormDialog({
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="psy-location">Clinic location</Label>
-              <Input
-                id="psy-location"
-                name="location"
-                defaultValue={psychologist?.location ?? ""}
-                placeholder="Gulberg III, Lahore"
-              />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="psy-location">Clinic location</Label>
+                <Input
+                  id="psy-location"
+                  name="location"
+                  defaultValue={psychologist?.location ?? ""}
+                  placeholder="Gulberg III, Lahore"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="psy-session">Session length (minutes)</Label>
+                <Input
+                  id="psy-session"
+                  name="sessionMinutes"
+                  type="number"
+                  min={15}
+                  max={240}
+                  step={5}
+                  defaultValue={psychologist?.session_minutes ?? 60}
+                  placeholder="60"
+                />
+                <p className="text-xs leading-5 text-muted-foreground">
+                  This is what divides their weekly hours into bookable slots.
+                  Changing it re-slices every future day.
+                </p>
+              </div>
             </div>
 
             <div className="space-y-2">

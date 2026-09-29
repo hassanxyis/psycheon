@@ -19,22 +19,33 @@ npx tsc --noEmit       # typecheck
 npx next typegen       # regenerate PageProps/LayoutProps route types
 ```
 
+```bash
+npm run check:slots     # assertions over src/lib/booking.ts (see below)
+```
+
 There is no test runner configured. `npm run build` runs TypeScript, so a clean
 build is currently the closest thing to a full check. Run `npx next typegen`
 after adding or renaming a route, otherwise `PageProps<"/new-route">` will not
 resolve -- pages use those globals rather than hand-written prop types.
 
+`npm run check:slots` is the one exception: slot arithmetic is timezone
+sensitive, and a five-hour error looks correct on a machine set to Pakistan time
+and wrong only in production, so it is asserted rather than eyeballed. The
+script forces `TZ=UTC` to reproduce the container. Run it after touching
+`src/lib/booking.ts`.
+
 ## What this is
 
 A psychology community + in-clinic booking platform for a clinic in Pakistan.
 `psych-platform-lean-mvp-plan.md` is the scope document the schema was built
-from. Built so far: auth, the community (posts, comments, likes, tags,
-reports), member profiles, the public psychologist directory, and the admin
-panel (moderation queue, psychologist roster, role management).
+from. Every phase in it now has UI: auth, the community (posts, comments, likes,
+tags, reports), member profiles, the public psychologist directory, booking, and
+the admin panel (moderation queue, psychologist roster, booking queue, role
+management).
 
-Booking is the remaining phase. There is no `/bookings` route yet, but the
-`availability` and `bookings` tables, their constraints and their RLS policies
-already exist in migration 0001/0003 -- building it needs no migration rewrites.
+Still outstanding from the plan: confirmation emails on booking (blocked on
+Resend SMTP -- see Environment) and a payment gateway (deliberately deferred,
+see Payments).
 
 ## Next.js 16 — this is not the Next.js in your training data
 
@@ -59,11 +70,12 @@ Route groups here hold **only Server Actions**, not pages:
 |---|---|
 | `src/app/(auth)/actions.ts` | sign in/up, magic link, Google, sign out |
 | `src/app/(community)/actions.ts` | create post, comment, like, report |
-| `src/app/admin/actions.ts` | moderation, roster, role changes |
+| `src/app/(booking)/actions.ts` | create booking, member cancellation |
+| `src/app/admin/actions.ts` | moderation, roster, bookings, role changes |
 | `src/app/profile/actions.ts` | profile edit |
 
 The pages those actions serve are flat routes -- `/login`, `/signup`, `/feed`,
-`/posts/[id]`. Do not go looking for `(community)/feed/page.tsx`.
+`/posts/[id]`, `/bookings`. Do not go looking for `(community)/feed/page.tsx`.
 
 Reads and writes are separated: **every query lives in `src/lib/queries.ts`**
 (server-only, returns view-shaped objects), **every mutation lives in an
@@ -162,6 +174,64 @@ Because `Relationships` is declared empty there, embedded selects
 the target. `getOpenReports()` batch-loads both target tables and merges locally;
 keep that shape rather than reaching for a join.
 
+## Booking
+
+`availability` holds a weekly wall-clock **window** (Monday 10:00-13:00);
+`bookings.slot_time` is one `timestamptz`. `src/lib/booking.ts` is the bridge and
+is pure -- `now` is always passed in, never read from the clock, which is what
+makes `npm run check:slots` possible.
+
+Three things there are easy to undo by accident:
+
+- **The clinic offset is applied explicitly.** `availability.start_time` is a
+  bare `time` meaning "10am at the clinic". The container runs UTC, so
+  `new Date(y, m, d, 10, 0)` would produce 10:00 UTC -- 3pm in Lahore -- and it
+  would look right on a dev machine set to Pakistan time. PKT is UTC+5 with no
+  DST since 2009, which is what makes a fixed offset exact rather than
+  approximate. Never format a `slot_time` with bare `toLocaleString()`; use
+  `formatSlotTime()`.
+- **`session_minutes` lives on `psychologists`** (migration 0007) and is what
+  divides a window into slots. A slot is only offered if the whole session fits
+  inside the window.
+- **`isSlotOffered()` in `createBooking` is not decoration.** No constraint ties
+  `bookings.slot_time` back to an `availability` row, so the unique index would
+  happily accept 3am on a Sunday. That check is the only thing between a crafted
+  POST and an appointment nobody is at the clinic for.
+
+`bookings_no_double_booking` is a **partial** unique index in 0007, not the table
+constraint 0001 declared. The original counted cancelled rows, so a cancelled
+booking held its slot forever and the insert failed with 23505 on a slot the UI
+correctly showed as free. The race between rendering a calendar and inserting can
+only be settled by the database, so 23505 is caught and turned into "someone just
+took that time" rather than prevented.
+
+**A member can see a psychologist they have booked, listed or not** --
+`"members view psychologists they have booked"` in 0007, via
+`private.has_booked()`. Without it, `is_active` was the only thing letting a
+non-admin read the table, and unlisting someone (the documented way to retire
+anyone with booking history, since `psychologist_id` is `on delete restrict`)
+blanked the psychologist out of every member's own booking list. The policy goes
+through a `private` function for the same reason `is_admin()` does: a USING
+clause selecting from `public.bookings` would evaluate that table's policies per
+row.
+
+Relatedly, `MemberBooking.sessionMinutes` is nullable and rendered only when
+present. It used to default to 60, which turned an unreadable row into a
+confidently wrong duration -- the failure mode worth avoiding is a fabricated
+fact, not a missing one.
+
+`booked_slots()` (0007) is a `security definer` function because RLS cannot
+express what the picker needs. "users view their own bookings" is correct -- a
+booking reveals that a named person is seeing a psychologist -- but policies are
+row-level, so there is no way to expose `slot_time` without also exposing
+`user_id`. The function returns bare instants and no identity. Read it, never
+`select` from `bookings`, when building a calendar.
+
+Members may set exactly one status, `cancelled`, and only more than 24h ahead.
+The 24h rule is clinic policy enforced in the action; the status restriction is
+enforced by `guard_booking_payment_fields` in the database. An admin cancelling
+past the cutoff is the intended escape hatch.
+
 ## Admin
 
 There is no UI to create the first admin. Promote one by hand -- the statement
@@ -188,6 +258,11 @@ Moderation is asymmetric because the schema is: posts have a `status` enum, so
 hiding/removing one is reversible; comments do not, so moderating a comment is a
 hard delete (the UI arms the button on first click before it fires).
 
+`setBookingStatus` never clears `paid_at`. Wiping it on a cancellation would
+destroy the record that money changed hands, which is the one fact a refund
+conversation depends on -- the status says the session will not happen, `paid_at`
+still says it was paid for.
+
 `updateUserRole` refuses to change the caller's own role, so an admin cannot
 lock the project out of its own admin area.
 
@@ -199,6 +274,12 @@ delay launch. `bookings` carries nullable `payment_provider` / `payment_ref` /
 `paid_at` so a gateway can be added later without a migration.
 `guard_booking_payment_fields` restricts those columns, and any status change
 other than `cancelled`, to admins.
+
+In practice: a member books and lands on `pending`, pays cash or by transfer at
+the clinic, and an admin hits "Mark paid" on `/admin/bookings`.
+`markBookingPaid` leaves `payment_provider` null precisely because there was no
+provider -- that column is for the gateway that does not exist yet, not for
+recording "cash".
 
 ## Environment
 

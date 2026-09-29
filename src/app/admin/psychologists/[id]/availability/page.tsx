@@ -35,8 +35,9 @@ export default async function AdminAvailabilityPage(
           {psychologist.name} — weekly schedule
         </h2>
         <p className="text-sm text-muted-foreground">
-          These hours repeat every week and show on the public profile. Online
-          booking is not open yet, so this is informational for now.
+          These hours repeat every week and are what members can book. Each
+          window is divided into {psychologist.session_minutes}-minute slots —
+          change that on the roster if it is wrong.
         </p>
       </div>
 

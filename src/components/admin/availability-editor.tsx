@@ -102,8 +102,8 @@ export function AvailabilityEditor({
           <CalendarDays className="mx-auto size-5 text-muted-foreground" aria-hidden />
           <p className="mt-3 text-sm font-medium">No availability set.</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            Until a slot exists, the public profile asks people to contact the
-            clinic instead.
+            Nothing can be booked until a window exists — the public profile
+            asks people to contact the clinic instead.
           </p>
         </div>
       ) : (

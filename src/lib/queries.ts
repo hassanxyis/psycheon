@@ -1,5 +1,6 @@
 import type {
   Availability,
+  BookingStatus,
   PostStatus,
   Profile,
   Psychologist,
@@ -32,6 +33,84 @@ export type PublicProfile = Pick<
   Profile,
   "id" | "display_name" | "avatar_url" | "bio" | "created_at"
 >;
+
+/**
+ * Every psychologist column, shared by the four selects that read the table.
+ * Listed explicitly rather than `*` so adding a column is a deliberate edit in
+ * one place -- and so a column added to the table is never shipped to the
+ * browser by accident.
+ */
+const PSYCHOLOGIST_COLUMNS =
+  "id, name, credentials, specialties, bio, photo_url, is_active, years_experience, languages, session_fee, location, session_minutes, created_at, updated_at";
+
+/**
+ * Booking rows as PostgREST returns them. Cast through these for the same
+ * reason PostRow exists: `Relationships: []` in the hand-written database types
+ * makes every embedded select infer as `never`. Delete once real types are
+ * generated.
+ */
+type MemberBookingRow = {
+  id: string;
+  slot_time: string;
+  status: BookingStatus;
+  notes: string | null;
+  created_at: string;
+  psychologist_id: string;
+  psychologist: {
+    name: string;
+    credentials: string;
+    location: string | null;
+    session_minutes: number;
+    is_active: boolean;
+  } | null;
+};
+
+type AdminBookingRow = {
+  id: string;
+  slot_time: string;
+  status: BookingStatus;
+  notes: string | null;
+  created_at: string;
+  paid_at: string | null;
+  user_id: string;
+  psychologist_id: string;
+  member: { display_name: string } | null;
+  psychologist: { name: string; session_minutes: number } | null;
+};
+
+/** A booking as the member's own list shows it. */
+export type MemberBooking = {
+  id: string;
+  slotTime: string;
+  status: BookingStatus;
+  notes: string | null;
+  psychologistId: string;
+  psychologistName: string;
+  psychologistCredentials: string | null;
+  location: string | null;
+  /** Null when the psychologist row could not be read -- render nothing then. */
+  sessionMinutes: number | null;
+  /**
+   * Whether the psychologist is still listed. An unlisted one has no public
+   * profile page -- getPsychologistById filters is_active -- so linking to them
+   * would 404. Unlisting is the documented way to retire someone who has
+   * bookings, so this is the expected path, not a rare case.
+   */
+  psychologistListed: boolean;
+};
+
+/** A booking as the admin queue shows it -- adds who booked it. */
+export type AdminBooking = {
+  id: string;
+  slotTime: string;
+  status: BookingStatus;
+  notes: string | null;
+  paidAt: string | null;
+  memberId: string;
+  memberName: string;
+  psychologistName: string;
+  sessionMinutes: number | null;
+};
 
 export type ModerationReport = {
   id: string;
@@ -265,9 +344,7 @@ export async function getPsychologists(): Promise<Psychologist[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("psychologists")
-    .select(
-      "id, name, credentials, specialties, bio, photo_url, is_active, years_experience, languages, session_fee, location, created_at, updated_at",
-    )
+    .select(PSYCHOLOGIST_COLUMNS)
     .eq("is_active", true)
     .order("name", { ascending: true });
 
@@ -279,9 +356,7 @@ export async function getPsychologistById(id: string): Promise<Psychologist | nu
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("psychologists")
-    .select(
-      "id, name, credentials, specialties, bio, photo_url, is_active, years_experience, languages, session_fee, location, created_at, updated_at",
-    )
+    .select(PSYCHOLOGIST_COLUMNS)
     .eq("id", id)
     .eq("is_active", true)
     .maybeSingle();
@@ -300,9 +375,7 @@ export async function getPsychologistForAdmin(
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("psychologists")
-    .select(
-      "id, name, credentials, specialties, bio, photo_url, is_active, years_experience, languages, session_fee, location, created_at, updated_at",
-    )
+    .select(PSYCHOLOGIST_COLUMNS)
     .eq("id", id)
     .maybeSingle();
 
@@ -314,9 +387,7 @@ export async function getAllPsychologistsForAdmin(): Promise<Psychologist[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("psychologists")
-    .select(
-      "id, name, credentials, specialties, bio, photo_url, is_active, years_experience, languages, session_fee, location, created_at, updated_at",
-    )
+    .select(PSYCHOLOGIST_COLUMNS)
     .order("created_at", { ascending: false });
 
   if (error) throw new Error(`Failed to load psychologist roster: ${error.message}`);
@@ -340,6 +411,112 @@ export async function getAvailabilityForPsychologist(
 
   if (error) throw new Error(`Failed to load availability: ${error.message}`);
   return (data ?? []) as Availability[];
+}
+
+/**
+ * Live booked instants for one psychologist, over a date range.
+ *
+ * Goes through the booked_slots() function rather than selecting from
+ * `bookings`: RLS lets a member see only their own rows, so a direct select
+ * would show a member every slot as free except the ones they booked
+ * themselves. The function returns instants and no identity -- see migration
+ * 0007 for why that is the narrowest thing that works.
+ */
+export async function getBookedSlots(opts: {
+  psychologistId: string;
+  from: Date;
+  to: Date;
+}): Promise<string[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("booked_slots", {
+    p_psychologist_id: opts.psychologistId,
+    p_from: opts.from.toISOString(),
+    p_to: opts.to.toISOString(),
+  });
+
+  if (error) throw new Error(`Failed to load booked slots: ${error.message}`);
+  return (data ?? []) as string[];
+}
+
+/**
+ * One member's own bookings, soonest first among upcoming ones.
+ *
+ * RLS ("users view their own bookings") already restricts this to the caller;
+ * the explicit user_id filter keeps the query honest about what it returns and
+ * means a future admin caller cannot accidentally widen it.
+ */
+export async function getBookingsForUser(userId: string): Promise<MemberBooking[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("bookings")
+    .select(
+      "id, slot_time, status, notes, created_at, psychologist_id, psychologist:psychologists!bookings_psychologist_id_fkey(name, credentials, location, session_minutes, is_active)",
+    )
+    .eq("user_id", userId)
+    .order("slot_time", { ascending: true });
+
+  if (error) throw new Error(`Failed to load your bookings: ${error.message}`);
+
+  const rows = (data ?? []) as unknown as MemberBookingRow[];
+  return rows.map((row) => ({
+    id: row.id,
+    slotTime: row.slot_time,
+    status: row.status,
+    notes: row.notes,
+    psychologistId: row.psychologist_id,
+    // The embed resolves for an unlisted psychologist too -- "members view
+    // psychologists they have booked" (migration 0007) is what makes that true.
+    // The fallbacks below are for a genuinely missing row, not for unlisting.
+    psychologistName: row.psychologist?.name ?? "A psychologist",
+    psychologistCredentials: row.psychologist?.credentials ?? null,
+    location: row.psychologist?.location ?? null,
+    // No `?? 60` default: a wrong duration stated confidently is worse than no
+    // duration, and 60 would be a guess dressed as a fact.
+    sessionMinutes: row.psychologist?.session_minutes ?? null,
+    psychologistListed: row.psychologist?.is_active ?? false,
+  }));
+}
+
+/**
+ * The admin booking queue. Ordered soonest-first: the useful question is which
+ * appointment is next, not which was booked most recently.
+ *
+ * `member` is embedded from profiles rather than auth.users -- the app never
+ * reads auth.users directly, and display_name is what the queue shows.
+ */
+export async function getBookingsForAdmin(opts: {
+  status?: BookingStatus;
+}): Promise<AdminBooking[]> {
+  const supabase = await createClient();
+
+  let query = supabase
+    .from("bookings")
+    .select(
+      "id, slot_time, status, notes, created_at, paid_at, user_id, psychologist_id, member:profiles!bookings_user_id_fkey(display_name), psychologist:psychologists!bookings_psychologist_id_fkey(name, session_minutes)",
+    )
+    .order("slot_time", { ascending: true })
+    .limit(250);
+
+  if (opts.status) query = query.eq("status", opts.status);
+
+  const { data, error } = await query;
+  if (error) throw new Error(`Failed to load bookings: ${error.message}`);
+
+  const rows = (data ?? []) as unknown as AdminBookingRow[];
+  return rows.map((row) => ({
+    id: row.id,
+    slotTime: row.slot_time,
+    status: row.status,
+    notes: row.notes,
+    paidAt: row.paid_at,
+    memberId: row.user_id,
+    memberName: row.member?.display_name ?? "A member",
+    psychologistName: row.psychologist?.name ?? "A psychologist",
+    // "admins manage psychologists" is `for all`, so this embed always resolves
+    // for an admin -- listed or not. Null here would mean the row is genuinely
+    // gone, and inventing 60 would hide that.
+    sessionMinutes: row.psychologist?.session_minutes ?? null,
+  }));
 }
 
 export async function getAllProfilesForAdmin(): Promise<Profile[]> {
@@ -460,7 +637,7 @@ export async function getOpenReports(): Promise<ModerationReport[]> {
 
 export async function getAdminOverview() {
   const supabase = await createClient();
-  const [reports, psychologists, users, posts] = await Promise.all([
+  const [reports, psychologists, users, posts, bookings] = await Promise.all([
     supabase
       .from("reports")
       .select("id", { count: "exact", head: true })
@@ -468,9 +645,23 @@ export async function getAdminOverview() {
     supabase.from("psychologists").select("id", { count: "exact", head: true }),
     supabase.from("profiles").select("id", { count: "exact", head: true }),
     supabase.from("posts").select("id", { count: "exact", head: true }),
+    // Unpaid bookings for sessions that have not happened yet -- the number the
+    // clinic acts on. A total booking count would only grow and never prompt
+    // anything.
+    supabase
+      .from("bookings")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "pending")
+      .gte("slot_time", new Date().toISOString()),
   ]);
 
-  if (reports.error || psychologists.error || users.error || posts.error) {
+  if (
+    reports.error ||
+    psychologists.error ||
+    users.error ||
+    posts.error ||
+    bookings.error
+  ) {
     throw new Error("Failed to load admin overview.");
   }
 
@@ -479,5 +670,6 @@ export async function getAdminOverview() {
     psychologists: psychologists.count ?? 0,
     users: users.count ?? 0,
     posts: posts.count ?? 0,
+    pendingBookings: bookings.count ?? 0,
   };
 }

@@ -35,9 +35,9 @@ export default function ContactPage() {
             Come talk to us.
           </h1>
           <p className="text-base leading-7 text-muted-foreground">
-            Booking online is not open yet, so the fastest way to arrange a
-            session is to call or email the clinic directly. We will help you
-            find the right psychologist for what you are carrying.
+            You can book a session online, or call and email us if you would
+            rather talk it through first. We will help you find the right
+            psychologist for what you are carrying.
           </p>
         </header>
 

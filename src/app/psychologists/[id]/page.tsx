@@ -9,14 +9,18 @@ import {
 } from "lucide-react";
 import { notFound } from "next/navigation";
 
+import { SlotPicker } from "@/components/booking/slot-picker";
 import { ProfileAvatar } from "@/components/profile/profile-avatar";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
+import { BOOKING_HORIZON_DAYS, buildCalendar } from "@/lib/booking";
 import {
   getAvailabilityForPsychologist,
+  getBookedSlots,
   getPsychologistById,
 } from "@/lib/queries";
 import { formatSlot, groupByDay } from "@/lib/schedule";
+import { getAuthUser } from "@/lib/supabase/server";
 
 export default async function PsychologistPage(
   props: PageProps<"/psychologists/[id]">,
@@ -26,7 +30,27 @@ export default async function PsychologistPage(
 
   if (!psychologist) notFound();
 
-  const schedule = groupByDay(await getAvailabilityForPsychologist(id));
+  // One `now` for the whole render. Reading the clock separately in the
+  // calendar build and in the range query could straddle a minute boundary and
+  // produce a slot the query did not check for a booking.
+  const now = new Date();
+  const horizonEnd = new Date(
+    now.getTime() + (BOOKING_HORIZON_DAYS + 1) * 86_400_000,
+  );
+
+  const [viewer, availability, bookedSlots] = await Promise.all([
+    getAuthUser(),
+    getAvailabilityForPsychologist(id),
+    getBookedSlots({ psychologistId: id, from: now, to: horizonEnd }),
+  ]);
+
+  const schedule = groupByDay(availability);
+  const calendar = buildCalendar({
+    availability,
+    sessionMinutes: psychologist.session_minutes,
+    bookedSlots,
+    now,
+  });
 
   const facts = [
     psychologist.years_experience !== null && {
@@ -135,29 +159,23 @@ export default async function PsychologistPage(
               </div>
 
               {schedule.length > 0 ? (
-                <>
-                  <dl className="space-y-1.5">
-                    {schedule.map((entry) => (
-                      <div
-                        key={entry.day}
-                        className="flex flex-wrap justify-between gap-x-6 gap-y-1 text-sm"
-                      >
-                        <dt className="font-medium">{entry.name}</dt>
-                        <dd className="tabular-nums text-muted-foreground">
-                          {entry.slots.map(formatSlot).join(", ")}
-                        </dd>
-                      </div>
-                    ))}
-                  </dl>
-                  <p className="text-sm leading-6 text-muted-foreground">
-                    Online booking is not open yet — contact the clinic to take
-                    one of these slots.
-                  </p>
-                </>
+                <dl className="space-y-1.5">
+                  {schedule.map((entry) => (
+                    <div
+                      key={entry.day}
+                      className="flex flex-wrap justify-between gap-x-6 gap-y-1 text-sm"
+                    >
+                      <dt className="font-medium">{entry.name}</dt>
+                      <dd className="tabular-nums text-muted-foreground">
+                        {entry.slots.map(formatSlot).join(", ")}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
               ) : (
                 <p className="text-sm leading-6 text-muted-foreground">
-                  Online booking is not open yet. Contact the clinic to arrange
-                  a session with {psychologist.name.split(" ")[0]}.
+                  {psychologist.name.split(" ")[0]} has no hours listed yet.
+                  Contact the clinic to arrange a session.
                 </p>
               )}
 
@@ -168,6 +186,41 @@ export default async function PsychologistPage(
                 Contact the clinic
               </Link>
             </div>
+
+            {/* Signed-out visitors see the real calendar before being asked to
+                sign in -- an empty "sign in to see availability" panel gives
+                someone no reason to bother. */}
+            {viewer ? (
+              <SlotPicker
+                psychologistId={psychologist.id}
+                psychologistName={psychologist.name}
+                sessionMinutes={psychologist.session_minutes}
+                days={calendar}
+              />
+            ) : (
+              calendar.length > 0 && (
+                <div className="space-y-3 rounded-2xl border border-border/70 bg-card/85 p-5">
+                  <h2 className="font-heading text-xl leading-tight">
+                    Next available
+                  </h2>
+                  <p className="text-sm leading-6 text-muted-foreground">
+                    {calendar[0].dayName} {calendar[0].dateLabel} at{" "}
+                    {calendar[0].slots
+                      .filter((slot) => !slot.taken)
+                      .slice(0, 3)
+                      .map((slot) => slot.label)
+                      .join(", ")}
+                    . Sign in to book one of these.
+                  </p>
+                  <Link
+                    href={`/login?next=/psychologists/${psychologist.id}`}
+                    className={buttonVariants({ size: "sm" })}
+                  >
+                    Sign in to book
+                  </Link>
+                </div>
+              )
+            )}
           </div>
         </article>
       </div>

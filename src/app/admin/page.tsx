@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { FileText, Flag, Stethoscope, Users } from "lucide-react";
+import { CalendarCheck, FileText, Flag, Stethoscope, Users } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getAdminOverview } from "@/lib/queries";
@@ -8,6 +8,13 @@ export default async function AdminOverviewPage() {
   const overview = await getAdminOverview();
 
   const cards = [
+    {
+      label: "Awaiting payment",
+      value: overview.pendingBookings,
+      href: "/admin/bookings?status=pending",
+      cta: "Booking queue",
+      icon: CalendarCheck,
+    },
     {
       label: "Open reports",
       value: overview.openReports,
