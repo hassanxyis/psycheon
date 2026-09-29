@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "check:slots": "node scripts/check-booking-slots.mjs"
+    "check:slots": "node scripts/check-booking-slots.mjs",
+    "check:migrations": "node scripts/check-migrations.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",

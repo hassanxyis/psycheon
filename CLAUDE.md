@@ -143,6 +143,15 @@ There is no `supabase/config.toml` and no linked CLI project -- migrations are
 applied by hand (dashboard SQL editor), so `supabase db push` will not work
 until the project is linked.
 
+Nothing records what has been applied, so **`npm run check:migrations` asks the
+database**. It probes for the column, function or function *signature* each
+migration introduces, using the publishable key from `.env.local`; read-only, and
+it exits non-zero when something is outstanding. Triggers and policies are
+invisible to a client, so those migrations report `--` rather than a guess, and
+the script prints the SQL to check them by hand. Anything un-probeable numbered
+above a missing migration is listed as outstanding too -- it cannot have been
+applied out of order.
+
 `src/lib/types/database.ts` is **hand-written** to match the migrations;
 regenerate it once the CLI is authenticated:
 
