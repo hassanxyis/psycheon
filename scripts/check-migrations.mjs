@@ -8,8 +8,11 @@
  * *written*. This asks the database instead, by probing for the specific column,
  * function and function-signature each migration introduces.
  *
- * Read-only. Every probe is a select or an rpc with a range that matches
- * nothing; nothing is inserted, updated or created.
+ * Almost entirely read-only: selects, and rpc calls whose arguments match
+ * nothing. The one exception is a deliberate insert into `posts` used to test
+ * whether RLS is in force -- it is constructed to fail twice over (no policy
+ * permits an anonymous insert, and its author_id is a uuid no profile has, so the
+ * foreign key rejects it even if the policy did not). Nothing is ever stored.
  *
  * It authenticates with the publishable key, which is what the browser uses, so
  * it sees exactly what an anonymous visitor sees. That bounds what is knowable:
@@ -176,7 +179,9 @@ function record(id, title, state, detail) {
   results.push({ id, title, state, detail });
 }
 
-console.log(`\nProbing ${URL_BASE}\n(as an anonymous visitor -- read-only)\n`);
+console.log(
+  `\nProbing ${URL_BASE}\n(as an anonymous visitor; reads, plus one insert that is designed to be refused)\n`,
+);
 
 // ---------------------------------------------------------------------------
 
@@ -200,11 +205,22 @@ record(
     : "expected both psychologists and bookings to exist",
 );
 
+/**
+ * `profiles` is world-readable by design (0003 -- author names on posts), which
+ * makes it the one window onto three otherwise invisible migrations.
+ */
+const profiles = await get("profiles?select=id,role");
+const profileRows = Array.isArray(profiles.body) ? profiles.body : [];
+const anyProfile = profileRows.length > 0;
+const anyAdmin = profileRows.some((row) => row.role === "admin");
+
 record(
   "0002",
   "handle_new_user trigger",
-  OPAQUE,
-  "a trigger is invisible to the client; confirm by signing up and checking profiles.display_name is the name, not the email local-part",
+  anyProfile ? YES : OPAQUE,
+  anyProfile
+    ? `${profileRows.length} profile row(s) exist, and nothing in the app inserts into profiles -- only this trigger does`
+    : "a trigger is invisible to the client, and there are no profiles yet to infer from; confirm by signing up and checking display_name is the name, not the email local-part",
 );
 
 /**
@@ -222,24 +238,62 @@ async function leaksToAnon(table) {
 const bookingLeak = bookings ? await leaksToAnon("bookings") : false;
 const reportLeak = await leaksToAnon("reports");
 
+/**
+ * A write attempt is the sharpest test available, because it does not depend on
+ * any table having rows. No policy grants `anon` insert on `posts` (0003 scopes
+ * every insert `to authenticated`), so a success would mean RLS is not in force.
+ *
+ * This is the one non-read in the script. It is written to fail: author_id is a
+ * uuid that cannot exist, so even in the catastrophic case where it is permitted,
+ * the foreign key to profiles rejects it (23503) and nothing is stored.
+ */
+async function anonCanInsertPost() {
+  const response = await request(`${URL_BASE}/rest/v1/posts`, {
+    method: "POST",
+    headers: { ...headers, "Content-Type": "application/json", Prefer: "return=minimal" },
+    body: JSON.stringify({
+      author_id: UNKNOWN_UUID,
+      title: "rls probe -- should never be stored",
+      body: "rls probe",
+    }),
+  });
+
+  // 42501 insufficient_privilege / 401 / 403 are all "RLS refused", the healthy
+  // answer. 23503 means the policy allowed it and only the foreign key stopped it.
+  if (response.status === 401 || response.status === 403) return false;
+  const text = await response.text();
+  if (/42501/.test(text)) return false;
+  if (/23503/.test(text)) return true;
+  return response.ok ? true : false;
+}
+
+const writeLeak = await anonCanInsertPost();
+const anyLeak = bookingLeak || reportLeak || writeLeak;
+
 record(
   "0003",
   "RLS policies",
-  bookingLeak || reportLeak ? NO : OPAQUE,
-  bookingLeak || reportLeak
-    ? `LEAK: an anonymous request read ${
-        [bookingLeak && "bookings", reportLeak && "reports"]
+  anyLeak ? NO : anyProfile ? YES : OPAQUE,
+  anyLeak
+    ? `LEAK: anonymous access succeeded on ${
+        [
+          bookingLeak && "reading bookings",
+          reportLeak && "reading reports",
+          writeLeak && "inserting a post",
+        ]
           .filter(Boolean)
           .join(" and ")
-      } -- no policy grants anon access to either, so RLS is not in force`
-    : "policies are invisible to the client, and no anon-readable rows leaked (which proves nothing if the tables are empty) -- run the SQL below to confirm",
+      } -- no policy permits that, so RLS is not in force`
+    : "an anonymous insert into posts was refused, and bookings/reports leaked nothing -- consistent with the policies being in place",
 );
 
 record(
   "0004",
   "admins update any profile",
   OPAQUE,
-  "a policy; not visible from here",
+  anyAdmin
+    ? "a policy, not visible from here -- but an admin exists and the admin panel could not manage roles without it, so it is almost certainly applied"
+    : "a policy; not visible from here",
 );
 
 const years = await hasColumn("psychologists", "years_experience");
@@ -256,8 +310,13 @@ record(
 record(
   "0006",
   "role guard bootstrap fix",
-  OPAQUE,
-  "changes a trigger function. If the first-admin promote in 0002's footer worked, this is applied",
+  // 0003's profiles_guard_role refused every role change when auth.uid() is
+  // null, which is the case in the SQL editor -- so before 0006 the first admin
+  // could not be created at all. An admin existing is the evidence.
+  anyAdmin ? YES : OPAQUE,
+  anyAdmin
+    ? "an admin row exists, and 0003's role guard made that impossible from the SQL editor until 0006 scoped it to signed-in users"
+    : "changes a trigger function. If the first-admin promote in 0002's footer worked, this is applied",
 );
 
 const sessionMinutes = await hasColumn("psychologists", "session_minutes");
